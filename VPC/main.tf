@@ -57,7 +57,7 @@ resource "aws_subnet" "zodiarks_public_a" {
   vpc_id = aws_vpc.zodiark.id
   cidr_block = "10.0.1.0/24"
   availability_zone = "us-west-2a"
-
+  map_public_ip_on_launch = true
   tags = {
     Name = "Public A"
   }
@@ -66,6 +66,7 @@ resource "aws_subnet" "zodiarks_public_b" {
   vpc_id = aws_vpc.zodiark.id
   cidr_block = "10.0.2.0/24"
   availability_zone = "us-west-2b"
+  map_public_ip_on_launch = true
   tags = {
     Name = "Public B"
   }
@@ -74,6 +75,7 @@ resource "aws_subnet" "zodiarks_public_c" {
   vpc_id = aws_vpc.zodiark.id
   cidr_block = "10.0.3.0/24"
   availability_zone = "us-west-2c"
+  map_public_ip_on_launch = true
   tags = {
     Name = "Public C"
   }
@@ -101,7 +103,7 @@ resource "aws_route_table_association" "private_route" {
 
 # Create Security Group
 resource "aws_security_group" "sshSecurity" {
-  name = "Zodiarks Allows SSH"
+  name = "sshSecurity"
   description = "Allow SSH"
   vpc_id = aws_vpc.zodiark.id
   
@@ -110,15 +112,16 @@ resource "aws_security_group" "sshSecurity" {
     from_port = 22
     to_port = 22
     protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   tags = {
-    Name = "Allow SSH"
+    Name = "sshSecurity"
   }
 }
 
 resource "aws_security_group" "httpSecurity" {
-  name = "Zodiark Allows HTTP"
+  name = "httpSecurity"
   description = "Zodiarks Allow HTTP"
   vpc_id = aws_vpc.zodiark.id
   ingress {
@@ -126,18 +129,34 @@ resource "aws_security_group" "httpSecurity" {
     from_port = 80
     to_port = 80
     protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
   tags = {
-    Name = "Allow HTTP"
+    Name = "httpSecurity"
+  }
+}
+
+resource "aws_security_group" "outboundTraffic" {
+  name = "outboundTraffic"
+  description = "Allow for outbound traffic"
+  vpc_id = aws_vpc.zodiark.id
+
+  egress {
+    description = "outbound traffic"
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
 resource "aws_network_interface" "zodiarkNetwork" {
   subnet_id = aws_subnet.zodiarks_public_a.id
-  /*security_groups = [
-    aws_security_group.sshSecurity.id,
-    aws_security_group.httpSecurity.id
-  ]*/
+  security_groups = [
+        "${aws_security_group.sshSecurity.id}",
+        "${aws_security_group.httpSecurity.id}",
+        "${aws_security_group.outboundTraffic.id}"
+  ]
 }
 
 data "aws_iam_policy_document" "test" {
@@ -206,14 +225,14 @@ resource "aws_iam_role" "zodiarksEC2" {
   }
 }
 
-# Create new EC3 key pair
-resource "tls_private_key" "newKey" {
-  algorithm = "RSA"
+data "tls_public_key" "example" {
+  private_key_pem = "${file("~/.ssh/ec2Key.pem")}"
 }
-resource "aws_key_pair" "deployer" {
-  key_name = "deployer-one"
-  public_key = tls_private_key.newKey.public_key_openssh
-}
+
+/*resource "aws_key_pair" "deployer" {
+  key_name = "ec2Key"
+  public_key = "${file("~/.ssh/ec2Key.pub")}" 
+}*/
 
 resource "aws_iam_instance_profile" "test_profile" {
   name = "test_profile"
@@ -223,20 +242,28 @@ resource "aws_iam_instance_profile" "test_profile" {
 resource "aws_instance" "zodiark_public" {
   ami = "ami-0359b3157f016ae46"
   instance_type = "t2.micro"
+
   network_interface {
     network_interface_id = aws_network_interface.zodiarkNetwork.id
     device_index = 0
   }
-  key_name = aws_key_pair.deployer.id
+
+  key_name = "ec2Key" 
   iam_instance_profile = aws_iam_instance_profile.test_profile.name
 
   # Typically, post-configuration should be left to tools such
   # ansible, but essential bootstrap commands or custom routes
   # for instances in private subnets are reasons why you might
   # need to use this hook .
-  user_data = <<-EOF
-    #!/bin/bash
+  user_data = <<EOF
+    #! /usr/bin/env bash
+    sudo ec2-user
     sudo yum install httpd -y
     sudo service httpd start
   EOF
+
+  
+  tags = {
+    Name = "Zodiark's Revenge!"
+  }
 }
