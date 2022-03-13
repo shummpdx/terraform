@@ -229,10 +229,10 @@ data "tls_public_key" "example" {
   private_key_pem = "${file("~/.ssh/ec2Key.pem")}"
 }
 
-/*resource "aws_key_pair" "deployer" {
+resource "aws_key_pair" "deployer" {
   key_name = "ec2Key"
   public_key = "${file("~/.ssh/ec2Key.pub")}" 
-}*/
+}
 
 resource "aws_iam_instance_profile" "test_profile" {
   name = "test_profile"
@@ -267,3 +267,7 @@ resource "aws_instance" "zodiark_public" {
     Name = "Zodiark's Revenge!"
   }
 }
+
+/*resource "aws_instance" "guacamole" {
+  ami = "ami-05764e7636cb4a33d"
+}*/
