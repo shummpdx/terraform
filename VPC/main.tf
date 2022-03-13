@@ -27,6 +27,7 @@ resource "aws_vpc" "zodiark" {
   }
 }
 
+
 # Create a new gateway for the VPC so it can connect to the internet
 resource "aws_internet_gateway" "ig-zodiark" {
   vpc_id = aws_vpc.zodiark.id
@@ -47,12 +48,14 @@ resource "aws_route_table" "zodiarks_path" {
     Name = "zodiarks path"
   } 
 }
+
 # Ensure that the newly created route table is the main route table used
 resource "aws_main_route_table_association" "main_route" {
   vpc_id = aws_vpc.zodiark.id
   route_table_id = aws_route_table.zodiarks_path.id
 }
 
+# Begin creating new subnets
 resource "aws_subnet" "zodiarks_public_a" {
   vpc_id = aws_vpc.zodiark.id
   cidr_block = "10.0.1.0/24"
@@ -62,6 +65,7 @@ resource "aws_subnet" "zodiarks_public_a" {
     Name = "Public A"
   }
 }
+
 resource "aws_subnet" "zodiarks_public_b" {
   vpc_id = aws_vpc.zodiark.id
   cidr_block = "10.0.2.0/24"
@@ -71,6 +75,7 @@ resource "aws_subnet" "zodiarks_public_b" {
     Name = "Public B"
   }
 }
+
 resource "aws_subnet" "zodiarks_public_c" {
   vpc_id = aws_vpc.zodiark.id
   cidr_block = "10.0.3.0/24"
@@ -80,6 +85,7 @@ resource "aws_subnet" "zodiarks_public_c" {
     Name = "Public C"
   }
 }
+
 resource "aws_subnet" "zodiarks_private_a" {
   vpc_id = aws_vpc.zodiark.id
   cidr_block = "10.0.4.0/24"
@@ -89,6 +95,27 @@ resource "aws_subnet" "zodiarks_private_a" {
   }
 }
 
+# Block/Allow my IP on public A
+resource "aws_network_acl" "blockMyself" {
+  vpc_id = aws_vpc.zodiark.id
+  subnet_ids = ["${aws_subnet.zodiarks_public_a.id}"]
+  ingress {
+    rule_no = 10
+    protocol =  "tcp"
+    to_port = 80
+    from_port = 80
+    cidr_block = "98.232.206.61/32"
+    action = "allow"
+    //action = "deny"
+  }
+
+  tags = {
+    Name = "Block Myself"
+  }
+}
+
+# Associate a seprate route table to private subnet so that 
+# the subnet can't reach the internet
 resource "aws_route_table" "zodiarks_private_path" {
   vpc_id = aws_vpc.zodiark.id
   tags = {
@@ -96,12 +123,13 @@ resource "aws_route_table" "zodiarks_private_path" {
   } 
 }
 
+# Associate the private route table with the private subnet
 resource "aws_route_table_association" "private_route" {
   subnet_id = aws_subnet.zodiarks_private_a.id
   route_table_id = aws_route_table.zodiarks_private_path.id
 }
 
-# Create Security Group
+# Allow SSH access
 resource "aws_security_group" "sshSecurity" {
   name = "sshSecurity"
   description = "Allow SSH"
@@ -120,6 +148,7 @@ resource "aws_security_group" "sshSecurity" {
   }
 }
 
+# Allow HTTP access
 resource "aws_security_group" "httpSecurity" {
   name = "httpSecurity"
   description = "Zodiarks Allow HTTP"
@@ -129,13 +158,14 @@ resource "aws_security_group" "httpSecurity" {
     from_port = 80
     to_port = 80
     protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["98.232.206.61/32"]
   }
   tags = {
     Name = "httpSecurity"
   }
 }
 
+# Allow traffic into the VPC
 resource "aws_security_group" "outboundTraffic" {
   name = "outboundTraffic"
   description = "Allow for outbound traffic"
@@ -150,7 +180,8 @@ resource "aws_security_group" "outboundTraffic" {
   }
 }
 
-resource "aws_network_interface" "zodiarkNetwork" {
+# Associate the security groups with the subnet 
+resource "aws_network_interface" "zodiarkPublicNetwork" {
   subnet_id = aws_subnet.zodiarks_public_a.id
   security_groups = [
         "${aws_security_group.sshSecurity.id}",
@@ -159,6 +190,16 @@ resource "aws_network_interface" "zodiarkNetwork" {
   ]
 }
 
+# Associate the security groups with the private subnet
+resource "aws_network_interface" "zodiarkPrivateNetwork" {
+  subnet_id = aws_subnet.zodiarks_private_a.id
+  security_groups = [
+        "${aws_security_group.sshSecurity.id}",
+        "${aws_security_group.outboundTraffic.id}"
+  ]
+}
+
+# IAM roles x_x
 data "aws_iam_policy_document" "test" {
   statement {
     actions = [
@@ -205,6 +246,7 @@ data "aws_iam_policy_document" "test" {
   }
 }
 
+# Assume Role Policy 
 data "aws_iam_policy_document" "instance-assume-role-policy" {
   statement {
     actions = ["sts:AssumeRole"]
@@ -215,6 +257,7 @@ data "aws_iam_policy_document" "instance-assume-role-policy" {
     }
   }
 }
+
 # Create role that will give access to SSM for session manager and S3
 resource "aws_iam_role" "zodiarksEC2" {
   name = "zodiarkEC2"
@@ -225,26 +268,30 @@ resource "aws_iam_role" "zodiarksEC2" {
   }
 }
 
+# Assign the private key that was created on my local computer
 data "tls_public_key" "example" {
   private_key_pem = "${file("~/.ssh/ec2Key.pem")}"
 }
 
+# Deploy(?) the key pay
 resource "aws_key_pair" "deployer" {
   key_name = "ec2Key"
   public_key = "${file("~/.ssh/ec2Key.pub")}" 
 }
 
+# Create  an IAM instance profile to associate with the role we created
 resource "aws_iam_instance_profile" "test_profile" {
   name = "test_profile"
   role = aws_iam_role.zodiarksEC2.name
 }
+
 # Build our Configured EC2 Instance
 resource "aws_instance" "zodiark_public" {
   ami = "ami-0359b3157f016ae46"
   instance_type = "t2.micro"
 
   network_interface {
-    network_interface_id = aws_network_interface.zodiarkNetwork.id
+    network_interface_id = aws_network_interface.zodiarkPublicNetwork.id
     device_index = 0
   }
 
@@ -264,7 +311,33 @@ resource "aws_instance" "zodiark_public" {
 
   
   tags = {
-    Name = "Zodiark's Revenge!"
+    Name = "Public"
+  }
+}
+
+# Create a private instance
+resource "aws_instance" "zodiark_privates" {
+  ami = "ami-0359b3157f016ae46"
+  instance_type = "t2.micro"
+
+  network_interface {
+    network_interface_id = aws_network_interface.zodiarkPrivateNetwork.id
+    device_index = 0
+  }
+
+  key_name = "ec2Key"
+  iam_instance_profile = aws_iam_instance_profile.test_profile.name 
+
+  user_data = <<EOF
+    #! /usr/bin/env bash
+    sudo su
+    echo -e "eldenringer\neldenringer" | passwd ec2-user
+    sudo sed 'i "/^PasswordAuthentication no/c\PasswordAuthentication yes" /etc/ssh/sshd_config
+    sudo service sshd restart
+  EOF
+
+  tags= {
+    Name = "Private"
   }
 }
 
