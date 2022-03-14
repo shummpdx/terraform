@@ -95,24 +95,45 @@ resource "aws_subnet" "zodiarks_private_a" {
   }
 }
 
+/*
 # Block/Allow my IP on public A
-resource "aws_network_acl" "blockMyself" {
+resource "aws_network_acl" "denyMyself" {
   vpc_id = aws_vpc.zodiark.id
   subnet_ids = ["${aws_subnet.zodiarks_public_a.id}"]
+
   ingress {
     rule_no = 10
     protocol =  "tcp"
     to_port = 80
     from_port = 80
     cidr_block = "98.232.206.61/32"
+    //action = "allow"
+    action = "deny"
+  }
+
+  ingress {
+    rule_no = 100
+    protocol = "-1"
+    to_port = 0
+    from_port = 0
+    cidr_block = "0.0.0.0/0"
     action = "allow"
-    //action = "deny"
+  }
+
+  egress {
+    rule_no = 10
+    protocol = "-1"
+    to_port = 0
+    from_port = 0
+    cidr_block = "0.0.0.0/0"
+    action = "allow"
   }
 
   tags = {
-    Name = "Block Myself"
+    Name = "Deny Myself"
   }
 }
+*/
 
 # Associate a seprate route table to private subnet so that 
 # the subnet can't reach the internet
@@ -151,17 +172,36 @@ resource "aws_security_group" "sshSecurity" {
 # Allow HTTP access
 resource "aws_security_group" "httpSecurity" {
   name = "httpSecurity"
-  description = "Zodiarks Allow HTTP"
+  description = "Zodiark Allows HTTP"
   vpc_id = aws_vpc.zodiark.id
   ingress {
     description = "HTTP"
     from_port = 80
     to_port = 80
     protocol = "tcp"
-    cidr_blocks = ["98.232.206.61/32"]
+    cidr_blocks = ["0.0.0.0/0"]
   }
+
   tags = {
     Name = "httpSecurity"
+  }
+}
+
+resource "aws_security_group" "httpsSecurity" {
+  name = "httpsSecurity"
+  description = "Zodiark Allows HTTPS"
+  vpc_id = aws_vpc.zodiark.id
+
+  ingress {
+    description = "HTTPS"
+    from_port = 443
+    to_port = 443
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "httpsSecurity"
   }
 }
 
@@ -186,6 +226,7 @@ resource "aws_network_interface" "zodiarkPublicNetwork" {
   security_groups = [
         "${aws_security_group.sshSecurity.id}",
         "${aws_security_group.httpSecurity.id}",
+        "${aws_security_group.httpsSecurity.id}",
         "${aws_security_group.outboundTraffic.id}"
   ]
 }
@@ -341,6 +382,52 @@ resource "aws_instance" "zodiark_privates" {
   }
 }
 
-/*resource "aws_instance" "guacamole" {
+data "aws_iam_policy_document" "guacamoleIAM" {
+  statement {
+    actions = [
+      "logs:CreateLogGroup",
+      "logs:CreateLogStream",
+      "logs:PupLogEvents",
+      "logs:DescribeLogStreams"
+    ]
+    effect = "Allow"
+    resources = ["*"]
+  }
+}
+
+# Assume Role Policy 
+data "aws_iam_policy_document" "guacamole-assume-role-policy" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    //resources = ["arn:aws:iam::*:role/EC32ReadOnlyAccessRole"]
+    principals {
+      type = "Service"
+      identifiers = ["ec2.amazonaws.com"]
+    }
+  }
+}
+resource "aws_iam_role" "zodiarksGuac" {
+  name = "zodiarkGuac"
+  assume_role_policy = data.aws_iam_policy_document.guacamole-assume-role-policy.json
+  inline_policy {
+    name = "guacRole"
+    policy = data.aws_iam_policy_document.guacamoleIAM.json
+  }
+}
+
+resource "aws_iam_instance_profile" "guacProfile" {
+  name = "guacProfile"
+  role = aws_iam_role.zodiarksGuac.name
+}
+
+resource "aws_instance" "guacamole" {
   ami = "ami-05764e7636cb4a33d"
-}*/
+  instance_type = "t2.small"
+
+  iam_instance_profile = aws_iam_instance_profile.guacProfile.name
+
+  network_interface {
+    network_interface_id = aws_network_interface.zodiarkPublicNetwork.id
+    device_index = 0
+  }
+}
