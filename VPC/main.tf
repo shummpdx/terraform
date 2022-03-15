@@ -220,26 +220,6 @@ resource "aws_security_group" "outboundTraffic" {
   }
 }
 
-# Associate the security groups with the subnet 
-resource "aws_network_interface" "zodiarkPublicNetwork" {
-  subnet_id = aws_subnet.zodiarks_public_a.id
-  security_groups = [
-        "${aws_security_group.sshSecurity.id}",
-        "${aws_security_group.httpSecurity.id}",
-        "${aws_security_group.httpsSecurity.id}",
-        "${aws_security_group.outboundTraffic.id}"
-  ]
-}
-
-# Associate the security groups with the private subnet
-resource "aws_network_interface" "zodiarkPrivateNetwork" {
-  subnet_id = aws_subnet.zodiarks_private_a.id
-  security_groups = [
-        "${aws_security_group.sshSecurity.id}",
-        "${aws_security_group.outboundTraffic.id}"
-  ]
-}
-
 # IAM roles x_x
 data "aws_iam_policy_document" "test" {
   statement {
@@ -328,43 +308,46 @@ resource "aws_iam_instance_profile" "test_profile" {
 
 # Build our Configured EC2 Instance
 resource "aws_instance" "zodiark_public" {
-  ami = "ami-0359b3157f016ae46"
-  instance_type = "t2.micro"
+    ami = "ami-0359b3157f016ae46"
+    instance_type = "t2.micro"
+    subnet_id = aws_subnet.zodiarks_public_a.id
+    private_ip = "10.0.1.213"
+    key_name = "ec2Key" 
 
-  network_interface {
-    network_interface_id = aws_network_interface.zodiarkPublicNetwork.id
-    device_index = 0
-  }
+    # Typically, post-configuration should be left to tools such
+    # ansible, but essential bootstrap commands or custom routes
+    # for instances in private subnets are reasons why you might
+    # need to use this hook.
+    user_data = <<EOF
+      #! /usr/bin/env bash
+      sudo ec2-user
+      sudo yum install httpd -y
+      sudo service httpd start
+    EOF
 
-  key_name = "ec2Key" 
-  iam_instance_profile = aws_iam_instance_profile.test_profile.name
-
-  # Typically, post-configuration should be left to tools such
-  # ansible, but essential bootstrap commands or custom routes
-  # for instances in private subnets are reasons why you might
-  # need to use this hook .
-  user_data = <<EOF
-    #! /usr/bin/env bash
-    sudo ec2-user
-    sudo yum install httpd -y
-    sudo service httpd start
-  EOF
-
-  
-  tags = {
-    Name = "Public"
-  }
+    security_groups = [
+        "${aws_security_group.sshSecurity.id}",
+        "${aws_security_group.httpSecurity.id}",
+        "${aws_security_group.httpsSecurity.id}",
+        "${aws_security_group.outboundTraffic.id}"
+    ]
+    
+    tags = {
+        Name = "Public"
+    }
 }
 
 # Create a private instance
 resource "aws_instance" "zodiark_privates" {
   ami = "ami-0359b3157f016ae46"
   instance_type = "t2.micro"
+  subnet_id = aws_subnet.zodiarks_private_a.id
+  private_ip = "10.0.4.47"
 
-  network_interface {
-    network_interface_id = aws_network_interface.zodiarkPrivateNetwork.id
-    device_index = 0
-  }
+  security_groups = [
+        "${aws_security_group.sshSecurity.id}",
+        "${aws_security_group.outboundTraffic.id}"
+  ]
 
   key_name = "ec2Key"
   iam_instance_profile = aws_iam_instance_profile.test_profile.name 
@@ -373,7 +356,7 @@ resource "aws_instance" "zodiark_privates" {
     #! /usr/bin/env bash
     sudo su
     echo -e "eldenringer\neldenringer" | passwd ec2-user
-    sudo sed 'i "/^PasswordAuthentication no/c\PasswordAuthentication yes" /etc/ssh/sshd_config
+    sudo sed -i "/^PasswordAuthentication no/c\PasswordAuthentication yes" /etc/ssh/sshd_config
     sudo service sshd restart
   EOF
 
@@ -393,19 +376,62 @@ data "aws_iam_policy_document" "guacamoleIAM" {
     effect = "Allow"
     resources = ["*"]
   }
+
+  statement {
+    actions = ["ec2:*"]
+    effect = "Allow"
+    resources = ["*"]
+  }
+  
+  statement{
+    effect = "Allow"
+    actions = ["elasticloadbalancing:*"]
+    resources = ["*"]
+  }
+
+  statement{
+    effect = "Allow"
+    actions = ["cloudwatch:*"]
+    resources = ["*"]
+  }
+
+  statement {
+    effect = "Allow"
+    actions = ["autoscaling:*"]
+    resources = ["*"]
+  }
+
+  statement{
+    effect = "Allow"
+    actions = ["iam:CreateServiceLinkedRole"]
+    resources = ["*"]
+
+    condition {
+      test = "StringEquals"
+      variable = "iam:AWSServiceName"
+      values = [ "autoscaling.amazonaws.com",
+        "ec2scheduled.amazonaws.com",
+        "elasticloadbalancing.amazonaws.com",
+        "spot.amazonaws.com",
+        "spotfleet.amazonaws.com",
+        "transitgateway.amazonaws.com"
+      ]
+    }
+  }
 }
 
 # Assume Role Policy 
 data "aws_iam_policy_document" "guacamole-assume-role-policy" {
   statement {
     actions = ["sts:AssumeRole"]
-    //resources = ["arn:aws:iam::*:role/EC32ReadOnlyAccessRole"]
+    
     principals {
       type = "Service"
       identifiers = ["ec2.amazonaws.com"]
     }
   }
 }
+
 resource "aws_iam_role" "zodiarksGuac" {
   name = "zodiarkGuac"
   assume_role_policy = data.aws_iam_policy_document.guacamole-assume-role-policy.json
@@ -423,11 +449,18 @@ resource "aws_iam_instance_profile" "guacProfile" {
 resource "aws_instance" "guacamole" {
   ami = "ami-05764e7636cb4a33d"
   instance_type = "t2.small"
-
+  subnet_id = aws_subnet.zodiarks_public_a.id
+  private_ip = "10.0.1.21"
   iam_instance_profile = aws_iam_instance_profile.guacProfile.name
 
-  network_interface {
-    network_interface_id = aws_network_interface.zodiarkPublicNetwork.id
-    device_index = 0
-  }
+  security_groups = [
+    "${aws_security_group.sshSecurity.id}",
+    "${aws_security_group.httpSecurity.id}",
+    "${aws_security_group.httpsSecurity.id}",
+    "${aws_security_group.outboundTraffic.id}"
+  ]
+
+  tags = {
+      Name = "Guaca!"
+    }
 }
