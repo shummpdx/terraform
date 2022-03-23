@@ -135,20 +135,24 @@ resource "aws_network_acl" "denyMyself" {
 }
 */
 
+resource "aws_vpc_endpoint" "zodiarksEndpoint"{
+  vpc_id = aws_vpc.zodiark.id
+  service_name = "com.amazonaws.us-west-2.s3"
+  route_table_ids = ["${aws_route_table.zodiarks_private_path.id}"]
+  tags = {
+    Name = "Zodiarks Endpoint"
+  }
+}
 # Associate a seprate route table to private subnet so that 
 # the subnet can't reach the internet
 resource "aws_route_table" "zodiarks_private_path" {
   vpc_id = aws_vpc.zodiark.id
 
-  route {
-    cidr_block = "10.0.4.0/24"
-    nat_gateway_id = aws_nat_gateway.privateInternet.id
-  }
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.privateInternet.id
-  }
+  //route {
+    //cidr_block = "0.0.0.0/0"
+    //nat_gateway_id = aws_nat_gateway.privateInternet.id
+    //vpc_endpoint_id = aws_vpc_endpoint.zodiarksEndpoint.id
+ // }
 
   tags = {
     Name = "zodiarks private path"
@@ -232,7 +236,7 @@ resource "aws_security_group" "outboundTraffic" {
 }
 
 # IAM roles x_x
-data "aws_iam_policy_document" "test" {
+data "aws_iam_policy_document" "ssmS3" {
   statement {
     actions = [
       "cloudwatch:PutMetricData",
@@ -276,6 +280,13 @@ data "aws_iam_policy_document" "test" {
     ]
     resources = ["*"]
   }
+
+  statement {
+    effect = "Allow"
+    actions = [ "s3:*",
+      "s3-object-lambda:*" ]
+    resources = ["*"]
+  }
 }
 
 # Assume Role Policy 
@@ -296,7 +307,7 @@ resource "aws_iam_role" "zodiarksEC2" {
   assume_role_policy = data.aws_iam_policy_document.instance-assume-role-policy.json
   inline_policy {
     name = "policy-1234"
-    policy = data.aws_iam_policy_document.test.json
+    policy = data.aws_iam_policy_document.ssmS3.json
   }
 }
 
@@ -476,7 +487,7 @@ resource "aws_instance" "guacamole" {
     }
 }
 
-resource "aws_eip" "elasticIP" {
+/*resource "aws_eip" "elasticIP" {
   vpc = true
   associate_with_private_ip = "10.0.4.47"
 }
@@ -492,4 +503,5 @@ resource "aws_nat_gateway" "privateInternet" {
   # To ensure proper ordering, it is recommended to add an explicit dependency
   # on the Internet Gateway for the VPC.
   # depends_on = [aws_internet_gateway.ig-zodiark]
-}
+}*/
+
