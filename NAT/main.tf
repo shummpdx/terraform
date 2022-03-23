@@ -139,6 +139,17 @@ resource "aws_network_acl" "denyMyself" {
 # the subnet can't reach the internet
 resource "aws_route_table" "zodiarks_private_path" {
   vpc_id = aws_vpc.zodiark.id
+
+  route {
+    cidr_block = "10.0.4.0/24"
+    nat_gateway_id = aws_nat_gateway.privateInternet.id
+  }
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.privateInternet.id
+  }
+
   tags = {
     Name = "zodiarks private path"
   } 
@@ -463,4 +474,22 @@ resource "aws_instance" "guacamole" {
   tags = {
       Name = "Guaca!"
     }
+}
+
+resource "aws_eip" "elasticIP" {
+  vpc = true
+  associate_with_private_ip = "10.0.4.47"
+}
+
+resource "aws_nat_gateway" "privateInternet" {
+  allocation_id = "${aws_eip.elasticIP.id}"
+  subnet_id     = "${aws_subnet.zodiarks_public_a.id}"
+
+  tags = {
+    Name = "Zodiark's NATty Gateway"
+  }
+
+  # To ensure proper ordering, it is recommended to add an explicit dependency
+  # on the Internet Gateway for the VPC.
+  # depends_on = [aws_internet_gateway.ig-zodiark]
 }
