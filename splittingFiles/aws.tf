@@ -7,6 +7,7 @@ resource "aws_instance" "variable_instance" {
   }
 }
 
+/*
 module "vpc" {
   source = "terraform-aws-modules/vpc/aws"
 
@@ -21,7 +22,8 @@ module "vpc" {
   enable_vpn_gateway = true
 
   tags = {
-    Terraform = "true"
+    Terraform   = "true"
     Environment = "dev"
   }
 }
+*/
