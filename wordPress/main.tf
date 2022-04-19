@@ -118,7 +118,7 @@ resource "aws_security_group" "wordpress_security" {
     from_port = 22
     to_port = 22
     protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["131.252.218.79/32"]
   }
 
   egress {
@@ -178,6 +178,7 @@ resource "aws_db_instance" "wordpressDB" {
   password = "wordpress"
   skip_final_snapshot = true
 }
+
 data "template_file" "user_data" {
   template = file("./user_data.tpl")
 
