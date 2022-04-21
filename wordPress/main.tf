@@ -118,7 +118,7 @@ resource "aws_security_group" "wordpress_security" {
     from_port = 22
     to_port = 22
     protocol = "tcp"
-    cidr_blocks = ["131.252.218.79/32"]
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -177,9 +177,10 @@ resource "aws_db_instance" "wordpressDB" {
   username = "wordpress_user" 
   password = "wordpress"
   skip_final_snapshot = true
+  /*snapshot_identifier = "arn:aws:rds:us-west-2:335676859762:snapshot:wordpress42022"*/
 }
 
-data "template_file" "user_data" {
+/*data "template_file" "user_data" {
   template = file("./user_data.tpl")
 
   vars = {
@@ -188,7 +189,28 @@ data "template_file" "user_data" {
     db_name = "wordpress_db"
     db_RDS = aws_db_instance.wordpressDB.endpoint 
   }
+}*/
+
+
+/*resource "aws_s3_bucket" "Ansible" {
+  bucket = "shAnsbile42022"
+
+  tags = {
+    Name = "shAnsible42022"
+  }
 }
+
+resource "aws_s3_bucket_acl" "Private" {
+  bucket = aws_s3_bucket.Ansible.id
+  acl = "private"
+}
+
+resouce "aws_s3_object" "WordPressFull" {
+  bucket = aws_s3_bucket.Ansible.id
+  key = "WordPressFull"
+  source = "./wordPressFull"
+}
+*/
 
 # Assign the private key that was created on my local computer
 data "tls_public_key" "example" {
@@ -204,11 +226,11 @@ resource "aws_key_pair" "deployer" {
 
 # Build our Configured EC2 Instance
 resource "aws_instance" "Wordpress" {
-    ami = "ami-0359b3157f016ae46"
+    ami = "ami-0892d3c7ee96c0bf7" #Ubuntu, 20.04 LTS
     instance_type = "t2.micro"
     subnet_id = aws_subnet.wordpress_public_a.id
     security_groups = ["${aws_security_group.wordpress_security.id}"]
-    user_data = data.template_file.user_data.rendered
+    //user_data = data.template_file.user_data.rendered
     key_name = "ec2Key" 
     
     tags = {

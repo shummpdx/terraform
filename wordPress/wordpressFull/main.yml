@@ -1,0 +1,36 @@
+---
+- name: Install Wordpress and mysql
+  hosts: all
+  become: yes
+
+  vars_files:
+    - vars/mysql_pass.yml
+
+  tasks:
+    - name: Update System
+      apt:
+        update_cache: yes
+        upgrade: yes
+
+    - name: Install Dependencies
+      import_tasks: tasks/php/playbook.yml
+
+    - name: Install WordPress
+      import_tasks: tasks/wordpress/playbook.yml
+
+    - name: Install MySQL
+      import_tasks: tasks/mysql/playbook.yml
+
+    - name: Configure WordPress to use the database
+      become: yes
+      become_user: root 
+      command: sudo -u www-data cp /var/www/html/wordpress/wp-config-sample.php /var/www/html/wordpress/wp-config.php
+
+    - name: Set the db creds in the config file
+      command: sudo -u www-data sed -i 's/database_name_here/wordpress/' /var/www/html/wordpress/wp-config.php
+
+    - name: Set the user_name
+      command: sudo -u www-data sed -i 's/username_here/wordpress/' /var/www/html/wordpress/wp-config.php
+    
+    - name: Set the password
+      command: sudo -u www-data sed -i 's/password_here/wordpress/' /var/www/html/wordpress/wp-config.php
