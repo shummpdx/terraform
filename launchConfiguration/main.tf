@@ -67,17 +67,13 @@ resource "aws_security_group" "outboundTraffic" {
 }
 
 resource "aws_launch_configuration" "as_conf" {
-  name = "web_config"
-  image_id = "ami-04cb38c0c7b926017"
+  name = "WordPress Config"
+  image_id = "ami-06ef8e22557d9ec79"
   instance_type = "t2.micro"
   security_groups = [
           "${aws_security_group.sshSecurity.id}",
           "${aws_security_group.httpSecurity.id}",
           "${aws_security_group.outboundTraffic.id}"
   ]
-  key_name = "CAA"
-  ebs_block_device {
-    device_name = "Encrypted"
-    snapshot_id = "snap-02912cea220ccc29d"
-  }
+  key_name = "ec2Key"
 }
