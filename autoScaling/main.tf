@@ -68,18 +68,14 @@ resource "aws_security_group" "outboundTraffic" {
 
 resource "aws_launch_configuration" "as_conf" {
   name = "web_config"
-  image_id = "ami-04cb38c0c7b926017"
-  instance_type = "t2.micro"
+  image_id = "ami-06ef8e22557d9ec79"
+  instance_type = "c4.large"
   security_groups = [
           "${aws_security_group.sshSecurity.id}",
           "${aws_security_group.httpSecurity.id}",
           "${aws_security_group.outboundTraffic.id}"
   ]
-  key_name = "CAA"
-  ebs_block_device {
-    device_name = "Encrypted"
-    snapshot_id = "snap-02912cea220ccc29d"
-  }
+  key_name = "ec2Key"
 }
 
 
@@ -91,11 +87,11 @@ resource "aws_placement_group" "myCluster" {
 resource "aws_autoscaling_group" "bar" {
   name = "My AutoBot"
   availability_zones = ["us-west-2a"]
-  max_size = 4
-  min_size = 2
+  max_size = 2 
+  min_size = 1
   health_check_grace_period = 300
   health_check_type = "ELB"
-  desired_capacity = 2 
+  desired_capacity = 1 
   force_delete = true
   placement_group = aws_placement_group.myCluster.id
   launch_configuration = aws_launch_configuration.as_conf.id
