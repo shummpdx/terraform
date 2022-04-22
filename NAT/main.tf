@@ -316,12 +316,6 @@ data "tls_public_key" "example" {
   private_key_pem = "${file("~/.ssh/ec2Key.pem")}"
 }
 
-# Deploy(?) the key pay
-resource "aws_key_pair" "deployer" {
-  key_name = "ec2Key"
-  public_key = "${file("~/.ssh/ec2Key.pub")}" 
-}
-
 # Create  an IAM instance profile to associate with the role we created
 resource "aws_iam_instance_profile" "test_profile" {
   name = "test_profile"
@@ -487,9 +481,8 @@ resource "aws_instance" "guacamole" {
     }
 }
 
-/*resource "aws_eip" "elasticIP" {
+resource "aws_eip" "elasticIP" {
   vpc = true
-  associate_with_private_ip = "10.0.4.47"
 }
 
 resource "aws_nat_gateway" "privateInternet" {
@@ -502,6 +495,6 @@ resource "aws_nat_gateway" "privateInternet" {
 
   # To ensure proper ordering, it is recommended to add an explicit dependency
   # on the Internet Gateway for the VPC.
-  # depends_on = [aws_internet_gateway.ig-zodiark]
-}*/
+  depends_on = [aws_internet_gateway.ig-zodiark]
+}
 
