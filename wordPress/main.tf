@@ -1,137 +1,23 @@
-# Script taken from: https://github.com/devbhusal/terraform-ec2-RDS-wordpress
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "4.4"
-    }
-    tls = {
-      source = "hashicorp/tls"
-      version = "3.1"
-    }
-  }
-}
-
 provider "aws" {
-  region = "us-west-2"
-}
-
-# Create a new VPC 
-resource "aws_vpc" "wordpress-VPC" {
-  cidr_block = "10.0.0.0/16"
-  instance_tenancy = "default"
-  enable_dns_hostnames = true
-  
-  tags = {
-    Name = "Production"
-  }
-}
-
-# Begin creating new subnets
-resource "aws_subnet" "wordpress_public_a" {
-  vpc_id = aws_vpc.wordpress-VPC.id
-  cidr_block = "10.0.1.0/24"
-  availability_zone = "us-west-2a"
-  map_public_ip_on_launch = true
-  tags = {
-    Name = "Wordpress Public A"
-  }
-}
-
-# Create a new gateway for the VPC so it can connect to the internet
-resource "aws_internet_gateway" "wordpress-ig" {
-  vpc_id = aws_vpc.wordpress-VPC.id
-  
-  tags = {
-    Name = "Wordpress Gateway"
-  }
-}
-
-# Create a new route table to allow our subnets to reach the internet
-resource "aws_route_table" "wordpress_route_table" {
-  vpc_id = aws_vpc.wordpress-VPC.id
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.wordpress-ig.id
-  }
-  tags = {
-    Name = "Wordpress Route Table"
-  } 
-}
-
-# Ensure that the newly created route table is the main route table used
-resource "aws_main_route_table_association" "wordpress_public_route" {
-  vpc_id = aws_vpc.wordpress-VPC.id
-  route_table_id = aws_route_table.wordpress_route_table.id
-}
-
-# HTTP(S)/MYSQL/SSH
-resource "aws_security_group" "wordpress_security" {
-  name = "Wordpress Security"
-  description = "HTTP(S)/MYSQL/SSH Permissions for Wordpress Instance"
-  vpc_id = aws_vpc.wordpress-VPC.id
-
-  ingress {
-    description = "HTTP"
-    from_port = 80
-    to_port = 80
-    protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "HTTPS"
-    from_port = 443
-    to_port = 443
-    protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "MYSQL"
-    from_port = 3306
-    to_port = 3306
-    protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "SSH"
-    from_port = 22
-    to_port = 22
-    protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    description = "outbound traffic"
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "Wordpress Security"
-  }
+  region = var.region
 }
 
 # Assign the private key that was created on my local computer
 data "tls_public_key" "example" {
-  private_key_pem = "${file("~/.ssh/ec2Key.pem")}"
+  private_key_pem = "${file(var.PRIVATE_KEY_PATH)}"
 }
 
 
 # Deploy(?) the key pay
 resource "aws_key_pair" "deployer" {
   key_name = "ec2Key"
-  public_key = "${file("~/.ssh/ec2Key.pub")}" 
+  public_key = "${file(var.PUBLIC_KEY_PATH)}" 
 }
 
 # Build our Configured EC2 Instance
 resource "aws_instance" "Wordpress" {
-    ami = "ami-0892d3c7ee96c0bf7" #Ubuntu, 20.04 LTS
-    instance_type = "t2.micro"
+    ami =  var.instance_ami #Ubuntu, 20.04 LTS
+    instance_type = var.instance_type 
     subnet_id = aws_subnet.wordpress_public_a.id
     security_groups = ["${aws_security_group.wordpress_security.id}"]
 
