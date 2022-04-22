@@ -38,24 +38,6 @@ resource "aws_subnet" "wordpress_public_a" {
   }
 }
 
-resource "aws_subnet" "wordpress_private_a" {
-  vpc_id = aws_vpc.wordpress-VPC.id
-  cidr_block = "10.0.2.0/24"
-  availability_zone = "us-west-2b"
-  tags = {
-    Name = "Wordpress Private A"
-  }
-}
-
-resource "aws_subnet" "wordpress_private_b" {
-  vpc_id = aws_vpc.wordpress-VPC.id
-  cidr_block = "10.0.3.0/24"
-  availability_zone = "us-west-2c"
-  tags = {
-    Name = "Wordpress Private B"
-  }
-}
-
 # Create a new gateway for the VPC so it can connect to the internet
 resource "aws_internet_gateway" "wordpress-ig" {
   vpc_id = aws_vpc.wordpress-VPC.id
@@ -134,84 +116,6 @@ resource "aws_security_group" "wordpress_security" {
   }
 }
 
-resource "aws_security_group" "RDS_allow" {
-  name = "RDS Security"
-  description = "MYSQL Security for RDS"
-  vpc_id = aws_vpc.wordpress-VPC.id
-
-  ingress {
-    description = "MYSQL"
-    from_port = 3306 
-    to_port = 3306 
-    protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    security_groups = ["${aws_security_group.wordpress_security.id}"]
-  }
-
-  egress {
-    description = "outbound traffic"
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "RDS Security"
-  }
-}
-
-# Create RDS Subnet Group
-resource "aws_db_subnet_group" "RDS_subnet_group" {
-  subnet_ids = ["${aws_subnet.wordpress_private_a.id}", "${aws_subnet.wordpress_private_b.id}"]
-}
-
-resource "aws_db_instance" "wordpressDB" {
-  allocated_storage = 10
-  engine = "mysql"
-  engine_version = "5.7"
-  instance_class = "db.t2.micro"
-  db_subnet_group_name = aws_db_subnet_group.RDS_subnet_group.id
-  vpc_security_group_ids = ["${aws_security_group.RDS_allow.id}"]
-  db_name = "wordpress_db"
-  username = "wordpress_user" 
-  password = "wordpress"
-  skip_final_snapshot = true
-  /*snapshot_identifier = "arn:aws:rds:us-west-2:335676859762:snapshot:wordpress42022"*/
-}
-
-/*data "template_file" "user_data" {
-  template = file("./user_data.tpl")
-
-  vars = {
-    db_username = "wordpress_user"
-    db_user_password = "wordpress"
-    db_name = "wordpress_db"
-    db_RDS = aws_db_instance.wordpressDB.endpoint 
-  }
-}*/
-
-
-/*resource "aws_s3_bucket" "Ansible" {
-  bucket = "shAnsbile42022"
-
-  tags = {
-    Name = "shAnsible42022"
-  }
-}
-
-resource "aws_s3_bucket_acl" "Private" {
-  bucket = aws_s3_bucket.Ansible.id
-  acl = "private"
-}
-
-resouce "aws_s3_object" "WordPressFull" {
-  bucket = aws_s3_bucket.Ansible.id
-  key = "WordPressFull"
-  source = "./wordPressFull"
-}
-*/
-
 # Assign the private key that was created on my local computer
 data "tls_public_key" "example" {
   private_key_pem = "${file("~/.ssh/ec2Key.pem")}"
@@ -230,16 +134,20 @@ resource "aws_instance" "Wordpress" {
     instance_type = "t2.micro"
     subnet_id = aws_subnet.wordpress_public_a.id
     security_groups = ["${aws_security_group.wordpress_security.id}"]
-    //user_data = data.template_file.user_data.rendered
+
     key_name = "ec2Key" 
-    
+   
     tags = {
         Name = "Public"
     }
-
-    depends_on = [aws_db_instance.wordpressDB]
 }
 
-resource "aws_eip" "eip" {
-  instance = aws_instance.Wordpress.id
+resource "local_file" "tf_ansible_inv_file" {
+  content = templatefile("./template/inventory.tpl",
+    {
+      host_ip = aws_instance.Wordpress.public_ip
+    }
+  )
+
+  filename = "./wordpressFull/inventory"
 }

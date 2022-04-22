@@ -1,5 +1,5 @@
 [hosts]
-34.218.48.137
+${host_ip}
 
 [hosts:vars]
 ansible_user=ubuntu
