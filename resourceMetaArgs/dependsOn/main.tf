@@ -1,4 +1,3 @@
-# VPC Practice
 terraform {
   required_providers {
     aws = {
