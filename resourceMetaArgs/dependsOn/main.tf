@@ -22,5 +22,4 @@ resource "aws_s3_bucket" "bucket1" {
 resource "aws_instance" "my_server" {
     ami = "ami-0359b3157f016ae46"
     instance_type = "t2.micro"
-    key_name = "ec2Key"
 }
