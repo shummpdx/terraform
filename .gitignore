@@ -4,3 +4,6 @@
 */.terraform*
 */.terraform.*
 */.terraform/*
+.terraform.*
+terraform-provider*
+*.tfstate*
