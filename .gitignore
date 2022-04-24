@@ -7,3 +7,4 @@
 .terraform.*
 terraform-provider*
 *.tfstate*
+*.json
