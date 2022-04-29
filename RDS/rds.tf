@@ -7,29 +7,10 @@ terraform {
   }
 }
 
-
 provider "aws" {
   region = "us-west-2"
 }
 
-resource "aws_security_group" "wordPressSecruityTest" {
-    name = "WordPress Security Test"
-    description = "Allow mysql"
-
-    ingress {
-        description = "mysql"
-        from_port = 3306
-        to_port = 3306
-        protocol = "tcp"
-    }
-
-    egress {
-        from_port = 0
-        to_port = 0
-        protocol = "-1"
-        cidr_blocks = ["0.0.0.0/0"]
-    }
-}
 resource "aws_db_instance" "wordPress" {
     engine = "mysql"
     engine_version = "8.0.28"
@@ -40,7 +21,7 @@ resource "aws_db_instance" "wordPress" {
     password = "sW^TxU6R"
     skip_final_snapshot = true
     
-    vpc_security_group_ids = [aws_security_group.wordPressSecruityTest.id]
+    vpc_security_group_ids = [aws_security_group.rds_security.id]
 
     tags = {
         Name = "WordPress MySQL RDS"
