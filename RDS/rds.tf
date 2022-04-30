@@ -28,7 +28,7 @@ resource "aws_db_instance" "wordPress" {
     }
 }
 
-resource "local_file" "tf_ansible_inv_file" {
+resource "local_file" "tf_ansible_wp_file" {
   content = templatefile("./template/wp-config.php",
     {
         rds_db = aws_db_instance.wordPress.db_name
@@ -38,5 +38,5 @@ resource "local_file" "tf_ansible_inv_file" {
     }
   )
 
-  filename = "./wp-config.php"
+  filename = "./wordpressFull/wp-config.php"
 }

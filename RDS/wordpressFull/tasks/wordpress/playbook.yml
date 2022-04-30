@@ -1,0 +1,41 @@
+---
+- name: Install Apache
+  package: 
+    name: apache2 
+    state: present
+
+- name: Download and Extract Wordpress
+  unarchive:
+    src: https://wordpress.org/latest.tar.gz
+    dest: /var/www/html
+    remote_src: yes
+    group: www-data
+    owner: www-data
+
+- name: Proper file perms 
+  command: chown www-data /var/www/html
+
+- name: Copy wordpress.conf
+  copy:
+    src: ./wordpress.conf
+    dest: /etc/apache2/sites-available/
+
+- name: Ensure Apache is running and starts at boot
+  service:
+    name: apache2
+    state: started
+    enabled: true
+
+- name: Enable the site
+  command: sudo a2ensite wordpress
+
+- name: Enable URL rewriting
+  command: sudo a2enmod rewrite
+
+- name: Disable the default "It Works" site
+  command: sudo a2dissite 000-default
+
+- name: Restart Apache2
+  service:
+    name: apache2
+    state: reloaded
