@@ -11,6 +11,15 @@ provider "aws" {
   region = "us-west-2"
 }
 
+resource "aws_db_subnet_group" "privateSubnets" {
+  name = "private_subnet_group"
+  subnet_ids = [aws_subnet.rds_private_a.id, aws_subnet.rds_private_b.id]
+
+  tags = {
+    Name = "Private Subnet Group"
+  }
+}
+
 resource "aws_db_instance" "wordPress" {
     engine = "mysql"
     engine_version = "8.0.28"
@@ -20,7 +29,7 @@ resource "aws_db_instance" "wordPress" {
     username = "admin"
     password = "sW^TxU6R"
     skip_final_snapshot = true
-    
+    db_subnet_group_name = aws_db_subnet_group.privateSubnets.id 
     vpc_security_group_ids = [aws_security_group.rds_security.id]
 
     tags = {
