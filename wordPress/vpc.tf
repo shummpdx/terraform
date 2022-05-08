@@ -24,6 +24,14 @@ resource "aws_nat_gateway" "PrivateNat" {
   allocation_id = aws_eip.example.id
 }
 
+resource "aws_db_subnet_group" "privateSubnets" {
+  name = "private_subnet_group"
+  subnet_ids = [aws_subnet.rds_private_a.id, aws_subnet.rds_private_b.id]
+
+  tags = {
+    Name = "Private Subnet Group"
+  }
+}
 resource "aws_subnet" "wordpress_public_a" {
   vpc_id = "vpc-017a3eb77ea7a4a56"
   cidr_block = "10.0.4.0/24"

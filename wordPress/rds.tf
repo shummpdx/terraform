@@ -1,25 +1,3 @@
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "4.4"
-    }
-  }
-}
-
-provider "aws" {
-  region = "us-west-2"
-}
-
-resource "aws_db_subnet_group" "privateSubnets" {
-  name = "private_subnet_group"
-  subnet_ids = [aws_subnet.rds_private_a.id, aws_subnet.rds_private_b.id]
-
-  tags = {
-    Name = "Private Subnet Group"
-  }
-}
-
 resource "aws_db_instance" "wordPress" {
     engine = "mysql"
     engine_version = "8.0.28"

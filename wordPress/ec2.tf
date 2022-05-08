@@ -8,10 +8,6 @@ resource "aws_instance" "wordpress" {
     tags = {
         Name = "Wordpress"
     }
-
-    /*depends_on = [
-      aws_db_instance.wordPress
-    ]*/
 }
 
 resource "local_file" "tf_ansible_inv_file" {
