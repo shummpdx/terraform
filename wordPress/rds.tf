@@ -1,12 +1,12 @@
 resource "aws_db_instance" "wordPress" {
     engine = "mysql"
     engine_version = "8.0.28"
-    instance_class = "db.t2.micro"
+    instance_class = var.rds_instance_type
     allocated_storage = 20
     db_name = "wordpress"
     username = "admin"
     password = "sW^TxU6R"
-    skip_final_snapshot = true
+    skip_final_snapshot = false
     db_subnet_group_name = aws_db_subnet_group.privateSubnets.id 
     vpc_security_group_ids = [aws_security_group.rds_security.id]
 

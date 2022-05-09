@@ -1,7 +1,7 @@
 resource "aws_security_group" "rds_security" {
     name = "RDS Security"
     description = "Allow mysql"
-    vpc_id = "vpc-017a3eb77ea7a4a56"
+    vpc_id = aws_vpc.production.id 
 
     ingress {
         description = "mysql"
@@ -26,7 +26,7 @@ resource "aws_security_group" "rds_security" {
 resource "aws_security_group" "EC2_security" {
     name = "EC2 Security"
     description = "Allow SSH/HTTP/HTTPS"
-    vpc_id = "vpc-017a3eb77ea7a4a56"
+    vpc_id = aws_vpc.production.id 
 
     ingress {
         description = "SSH"

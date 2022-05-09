@@ -1,12 +1,19 @@
 region = "us-west-2"
 
-instance_type = "t2.micro"
-
 cidr_block = "10.0.0.0/16"
 
-subnet1_cidr = "10.0.1.0/24"
-AZ1 = "us-west-2a"
+subnet1_cidr = "10.0.2.0/24"
+subnet2_cidr = "10.0.3.0/24"
+subnet3_cidr = "10.0.4.0/24"
+
+west2a_AZ = "us-west-2a"
+west2b_AZ = "us-west-2b"
+west2c_AZ = "us-west-2c"
+
 PRIVATE_KEY_PATH = "~/.ssh/ec2Key.pem"
 PUBLIC_KEY_PATH = "~/.ssh/ec2Key.pub"
 
 instance_ami = "ami-0892d3c7ee96c0bf7"
+instance_type = "t2.micro"
+
+rds_instance_type = "db.t2.micro"
