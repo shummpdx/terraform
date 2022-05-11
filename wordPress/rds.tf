@@ -5,7 +5,7 @@ resource "aws_db_instance" "wordPress" {
     allocated_storage = 20
     db_name = "wordpress"
     username = "admin"
-    password = "sW^TxU6R"
+    password = "password"
     skip_final_snapshot = false
     db_subnet_group_name = aws_db_subnet_group.privateSubnets.id 
     vpc_security_group_ids = [aws_security_group.rds_security.id]
