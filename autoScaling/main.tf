@@ -93,7 +93,7 @@ resource "aws_cloudwatch_metric_alarm" "myScalingAlarm" {
   namespace = "AWS/EC2"
   statistic = "Average"
 
-  # If our CPU utilization is over 20% 
+  # If our CPU utilization is greater than or equal to 20% 
   threshold = 20 
 
   # The period of time used to calculate the average. If the average execeeds the threshold
@@ -128,7 +128,7 @@ resource "aws_cloudwatch_metric_alarm" "myScalingDownAlarm" {
   namespace = "AWS/EC2"
   statistic = "Average"
 
-  # If our CPU utilization is over 20% 
+  # If our CPU utilization is Less Than Or Equal To 10% 
   threshold = 10 
 
   # The period of time used to calculate the average. If the average execeeds the threshold
