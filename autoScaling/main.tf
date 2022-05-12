@@ -59,17 +59,13 @@ resource "aws_launch_configuration" "as_conf" {
   key_name = "ec2Key"
 }
 
-/*resource "aws_placement_group" "myCluster" {
-  name = "Custard the Clustar"
-  strategy = "cluster"
-}*/
-
-resource "aws_autoscaling_group" "bar" {
+resource "aws_autoscaling_group" "myAutoScaler" {
   name = "My AutoBot"
-  availability_zones = ["us-west-2a"]
+  vpc_zone_identifier = ["subnet-03884456ae66871c8"]
+  //availability_zones = ["us-west-2a"]
   max_size = 3 
   min_size = 2
-  health_check_grace_period = 300
+  health_check_grace_period = 100
   health_check_type = "EC2"
   desired_capacity = 2 
   force_delete = true
@@ -79,17 +75,38 @@ resource "aws_autoscaling_group" "bar" {
 
 resource "aws_autoscaling_policy" "CPU_util" {
   name = "CPU_Util"
-  autoscaling_group_name = aws_autoscaling_group.bar.name
+  autoscaling_group_name = aws_autoscaling_group.myAutoScaler.name
   adjustment_type = "ChangeInCapacity"
-  policy_type = "PredictiveScaling"
-  predictive_scaling_configuration {
-    metric_specification {
-      target_value = 10
-
-      predefined_load_metric_specification {
-        predefined_metric_type = "ASGTotalCPUUtilization"
-        resource_label = "testLabel"
-      }
-    }
-  }
+  scaling_adjustment = 1
+  cooldown = 60 # Seconds after a scale activity completes and another can start
+  policy_type = "SimpleScaling"
 }
+
+# Define CloudWatch Monitoring
+# We are gonna pick the CPU metrics within CloudWatch and set a threshold to trigger the action
+resource "aws_cloudwatch_metric_alarm" "myScalingAlarm" {
+  alarm_name = "myScalingAlarm"
+  alarm_description = "Alarm Once CPU Usages Increase"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods = 2
+  metric_name = "CPUUtilization"
+  namespace = "AWS/EC2"
+  statistic = "Average"
+
+  # If our CPU utilization is over 20% 
+  threshold = 20 
+
+  # The period of time used to calculate the average. If the average execeeds the threshold
+  # it will trigger this alarm_action
+  period = 120 
+
+  # The Scope -
+  dimensions = {
+    "AutoScalingGroupName" = aws_autoscaling_group.myAutoScaler.name
+  }
+  actions_enabled = true
+  alarm_actions = [aws_autoscaling_policy.CPU_util.arn]
+}
+
+# Define Auto Descaling Policy
+# Define Descaling CloudWatch
