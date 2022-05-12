@@ -21,8 +21,11 @@ To install on an Amazon Linux VM:
 5. Go back to your EC2 instances and select the machine you've SSH'd into -> then go to monitoring.
 6. Wait awhile and the alarm should trigger the creation of another EC2 instance
 7. ctrl+c the stress test
-8. Once CPU utilization <= 10% the instance that was create should terminate. 
+8. Once CPU utilization <= 10% the instance that was created should terminate. 
 
+### expressions
+
+This directory shows examples of working with *for
 ## To Run
 Inside of any particular directory enter 
 

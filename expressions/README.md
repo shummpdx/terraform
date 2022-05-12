@@ -1,10 +1,11 @@
 = String Templates =
 terraform console
-"Hello ${var.hello}!" 
-"Hello %{if var.hello == "world"}Mars%{else}World%{endif}"
+
+```"Hello ${var.hello}!"``` 
+```"Hello %{if var.hello == "world"}Mars%{else}World%{endif}"```
 
 = For Expression =
-
+```
 worlds=[
     "Aether",
     "Primal",
@@ -16,10 +17,12 @@ worlds=[
     "Gaia",
     "Mana"
 ]
+```
 
 terraform console
-[for world in var.worlds : upper(world)]
+```[for world in var.worlds : upper(world)]```
 
+```
 worlds_instance={
     "Aether" : "Cactuar",
     "Primal" : "Famfrit",
@@ -31,7 +34,8 @@ worlds_instance={
     "Gaia" : "Ultima",
     "Mana" : "Ixion"
 }
-{for key,value in var.worlds_instance : "${key}" => upper(value)}
-
+```
+```{for key,value in var.worlds_instance : "${key}" => upper(value)}
+```
 Filter:
-[for key,value in var.worlds_instance : upper(key) if value == "Lich"]
+```[for key,value in var.worlds_instance : upper(key) if value == "Lich"]```
