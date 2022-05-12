@@ -25,7 +25,30 @@ To install on an Amazon Linux VM:
 
 ### expressions
 
-This directory shows examples of working with *for
+This directory shows examples of working with *for*
+
+### instances
+
+This directory shows how to set up a basic EC2 instance with a keypair and allows SSH
+
+### launchConfiguration
+*Important: AWS recommends using _launch templates_ rather than _launch configurations_*
+
+This directory showcases how a launch configuration is set up. Launch configurations are templates that an *autoscaling group* uses to launch an EC2 instance. Launch configurations take:
+1. AMIs
+2. Instance Type
+3. Key Pair
+4. Security Groups
+5. Block Device Mapping
+
+A launch template or EC2 instance can also be used for autoscaling groups. 
+
+### modules
+Modules are "containers for multiple resources that are used together." 
+
+### networkACL
+This directory will create an EC2 instance that uses NACLs to deny myself access to the apache page. 
+
 ## To Run
 Inside of any particular directory enter 
 
