@@ -12,42 +12,49 @@ The CloudWatch alarm will check the CPU Utilization and when it's reached an *av
 We will also create a *scale_down* policy that will remove an instance if CPU utilization is _less than or equal to_ 10% over another 2-minute period.
 
 To test that our policy works, we can use a utility called *stress*.
-To install on an Amazon Linux VM use:
+To install on an Amazon Linux VM:
 
-This will spin up an autoscaling group based on the health cehcks done on the EC2 instances. It creates a **launch configuration** that will be used to spin up an EC2 instance. It is set up to spin up two EC2 instances. If one, or both, do not pass the health check the autoscaling group will initialize the necessary number of instances so that the minimum size is always met. 
+1. SSH into your instance (you will need to change change the key name and deploy it if you haven't already done so)
+2. Enter ```amazon-linux-extras install epel -y```
+3. Enter ```yumm install stress```
+4. Enter ```stress --cpu 8 --vm-bytes 1024```
+5. Go back to your EC2 instances and select the machine you've SSH'd into -> then go to monitoring.
+6. Wait awhile and the alarm should trigger the creation of another EC2 instance
+7. ctrl+c the stress test
+8. Once CPU utilization <= 10% the instance that was create should terminate. 
 
 ## To Run
 Inside of any particular directory enter 
 
-'''
-    terraform init
-'''
+```
+terraform init
+```
 
 to initialize a working directory containing Terraform configuration files. You should always run this command when first working with Terraform so that it knows which providers will be required prior to running.
 
 ## Validate
 Use 
 
-'''
+```
 terraform validate
-'''
+```
 
 to validate that your configurations are syntactically valid and internally consistent. 
 
 ## Plan
 Use
 
-'''
+```
 terraform plan
-'''
+```
 
 to get an output of all the proposed changes that will occur when you are ready to apply. 
 
 ## Apply
 Use
 
-'''
+```
 terraform apply
-'''
+```
 
 to run your configurations and begin building the described architecture. 
