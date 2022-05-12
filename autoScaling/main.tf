@@ -73,7 +73,7 @@ resource "aws_autoscaling_group" "myAutoScaler" {
   launch_configuration = aws_launch_configuration.as_conf.id
 }
 
-resource "aws_autoscaling_policy" "CPU_util" {
+resource "aws_autoscaling_policy" "scale_up" {
   name = "CPU_Util"
   autoscaling_group_name = aws_autoscaling_group.myAutoScaler.name
   adjustment_type = "ChangeInCapacity"
@@ -86,7 +86,7 @@ resource "aws_autoscaling_policy" "CPU_util" {
 # We are gonna pick the CPU metrics within CloudWatch and set a threshold to trigger the action
 resource "aws_cloudwatch_metric_alarm" "myScalingAlarm" {
   alarm_name = "myScalingAlarm"
-  alarm_description = "Alarm Once CPU Usages Increase"
+  alarm_description = "Alarm Once CPU Usage Increases"
   comparison_operator = "GreaterThanOrEqualToThreshold"
   evaluation_periods = 2
   metric_name = "CPUUtilization"
@@ -105,8 +105,40 @@ resource "aws_cloudwatch_metric_alarm" "myScalingAlarm" {
     "AutoScalingGroupName" = aws_autoscaling_group.myAutoScaler.name
   }
   actions_enabled = true
-  alarm_actions = [aws_autoscaling_policy.CPU_util.arn]
+  alarm_actions = [aws_autoscaling_policy.scale_up.arn]
 }
 
 # Define Auto Descaling Policy
+resource "aws_autoscaling_policy" "scaledown_policy" {
+  name = "scaledown_policy"
+  autoscaling_group_name = aws_autoscaling_group.myAutoScaler.name
+  adjustment_type = "ChangeInCapacity"
+  scaling_adjustment = -1
+  cooldown = 60
+  policy_type = "SimpleScaling"
+}
+
 # Define Descaling CloudWatch
+resource "aws_cloudwatch_metric_alarm" "myScalingDownAlarm" {
+  alarm_name = "myScalingDownAlarm"
+  alarm_description = "Alarm Once CPU Usage Decreases"
+  comparison_operator = "LessThanOrEqualToThreshold"
+  evaluation_periods = 2
+  metric_name = "CPUUtilization"
+  namespace = "AWS/EC2"
+  statistic = "Average"
+
+  # If our CPU utilization is over 20% 
+  threshold = 10 
+
+  # The period of time used to calculate the average. If the average execeeds the threshold
+  # it will trigger this alarm_action
+  period = 120 
+
+  # The Scope -
+  dimensions = {
+    "AutoScalingGroupName" = aws_autoscaling_group.myAutoScaler.name
+  }
+  actions_enabled = true
+  alarm_actions = [aws_autoscaling_policy.scaledown_policy.arn]
+}
