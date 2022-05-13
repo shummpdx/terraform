@@ -1,3 +1,4 @@
+# Create new VPC
 resource "aws_vpc" "production" {
   cidr_block = var.cidr_block
   instance_tenancy = "default"
@@ -8,6 +9,7 @@ resource "aws_vpc" "production" {
 }
 
 # Create private subnets for the RDS subnet group
+# Two private subnets are requried for db subnet group
 resource "aws_subnet" "rds_private_a" {
   vpc_id = aws_vpc.production.id
   cidr_block = var.subnet1_cidr 
