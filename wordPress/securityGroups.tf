@@ -33,7 +33,7 @@ resource "aws_security_group" "EC2_security" {
         from_port = 22 
         to_port = 22 
         protocol = "tcp"
-        cidr_blocks = ["0.0.0.0/0"]
+        cidr_blocks = ["98.232.206.61/32"]
     }
 
     ingress {
