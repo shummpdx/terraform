@@ -1,14 +1,14 @@
 resource "aws_security_group" "rds_security" {
     name = "RDS Security"
     description = "Allow mysql"
-    vpc_id = aws_vpc.production.id 
+    vpc_id = aws_vpc.production.id
 
     ingress {
         description = "mysql"
         from_port = 3306
         to_port = 3306
         protocol = "tcp"
-        cidr_blocks = ["${aws_instance.wordpress.private_ip}/32"]
+        security_groups = [aws_security_group.wordpress_security.id]
     }
 
     egress {
@@ -21,12 +21,16 @@ resource "aws_security_group" "rds_security" {
     depends_on = [
         aws_instance.wordpress
     ]
+
+    tags = {
+        Name = "RDS Security"
+    }
 }
 
-resource "aws_security_group" "EC2_security" {
+resource "aws_security_group" "wordpress_security" {
     name = "EC2 Security"
     description = "Allow SSH/HTTP/HTTPS"
-    vpc_id = aws_vpc.production.id 
+    vpc_id = aws_vpc.production.id
 
     ingress {
         description = "SSH"
@@ -57,5 +61,9 @@ resource "aws_security_group" "EC2_security" {
         to_port = 0
         protocol = "-1"
         cidr_blocks = ["0.0.0.0/0"]
+    }
+
+    tags = {
+        Name = "Wordpress [Practice]"
     }
 }
