@@ -18,10 +18,6 @@ resource "aws_security_group" "rds_security" {
         cidr_blocks = ["0.0.0.0/0"]
     }
 
-    depends_on = [
-        aws_instance.wordpress
-    ]
-
     tags = {
         Name = "RDS Security"
     }
