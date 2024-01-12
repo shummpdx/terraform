@@ -3,7 +3,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "4.4"
+      version = "5.31"
     }
   }
 }
@@ -29,17 +29,11 @@ resource "aws_kms_key" "examplekms" {
     deletion_window_in_days = 7
 }
 
-# Ensure bucket is private? Should default to private.
-resource "aws_s3_bucket_acl" "nolooking" {
-    bucket = "seans-bucket-of-runes"
-    acl = "private"
-}
-
 # Upload photo (object) to the bucket
-resource "aws_s3_object" "myPlants" {
+resource "aws_s3_object" "smile" {
     bucket = aws_s3_bucket.bucket1.id 
-    key = "myPlants"
-    source = "/home/sean/Pictures/Green-Tropical-Plant-Wallpaper-Mural-Plain-820x532.jpg"
+    key = "smile"
+    source = "./smile.png"
     kms_key_id = aws_kms_key.examplekms.arn
 }
 
@@ -67,8 +61,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "example" {
 
 # This data source can be used to fetch information about a specific
 # IAM user.
-data "aws_iam_user" "anyuser" {
-    user_name = "anyuser"
+data "aws_iam_user" "shumm" {
+    user_name = "shumm"
 }
 
 # Create a policy that prevents "anyuser" from listing the bucket.
@@ -77,7 +71,7 @@ data "aws_iam_policy_document" "deny_listing" {
         principals {
             type = "AWS"
             identifiers = [
-                "${data.aws_iam_user.anyuser.arn}"
+                "${data.aws_iam_user.shumm.arn}"
             ]
         }
 
