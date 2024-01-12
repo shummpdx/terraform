@@ -1,0 +1,1 @@
+"empty result" -> may occur if the account doesn't have permission to the AMI (possibly updated?)
