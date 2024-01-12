@@ -58,6 +58,7 @@ resource "aws_instance" "zodiark_privates" {
 }
 
 # Guacamole Instance
+# Must accept terms/cond. to use resource 
 resource "aws_instance" "guacamole" {
   ami = "ami-05764e7636cb4a33d"
   instance_type = "t2.small"
