@@ -1,6 +1,7 @@
 resource "aws_autoscaling_group" "myAutoScaler" {
+  depends_on = [ aws_subnet.main ]
   name = "My AutoBot"
-  vpc_zone_identifier = ["subnet-03884456ae66871c8"]
+  vpc_zone_identifier = [aws_subnet.main.id]
   max_size = 3 
   min_size = 2
   health_check_grace_period = 100

@@ -7,4 +7,5 @@ resource "aws_launch_configuration" "as_conf" {
           "${aws_security_group.outboundTraffic.id}"
   ]
   key_name = "ec2Key"
+  associate_public_ip_address = true
 }
