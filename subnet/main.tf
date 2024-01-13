@@ -1,8 +1,8 @@
 terraform {
   required_providers {
         aws = {
-        source  = "hashicorp/aws"
-        version = "5.31"
+            source  = "hashicorp/aws"
+            version = "5.31"
         }
     }
 }
@@ -23,6 +23,6 @@ resource "aws_subnet" "main" {
     cidr_block = "10.0.1.0/24"
 
     tags = {
-        Name = "Main"
+        Name = "Sandbox"
     }
 }
