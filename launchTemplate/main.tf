@@ -7,6 +7,7 @@ terraform {
   }
 }
 
+#VPC Creation
 resource "aws_vpc" "ltVPC" {
     cidr_block = "10.0.0.0/16"
     tags = {
@@ -14,15 +15,41 @@ resource "aws_vpc" "ltVPC" {
     }
 }
 
+#Gateway Creation
+resource "aws_internet_gateway" "launchTemplateGateway" {
+  vpc_id = aws_vpc.ltVPC.id
+}
+
+#Subnet Creation
 resource "aws_subnet" "ltSub" {
     vpc_id = aws_vpc.ltVPC.id
     cidr_block = "10.0.1.0/24"
-
+    availability_zone = "us-west-2b"
+    map_public_ip_on_launch = true
     tags = {
         Name = "ltSub"
     }
 }
 
+#Create Route Table
+resource "aws_route_table" "launchTempRouteTable" {
+  vpc_id = aws_vpc.ltVPC.id
+}
+
+#Associate route table with subnet
+resource "aws_route_table_association" "routeTableAssociation" {
+    subnet_id = aws_subnet.ltSub.id
+    route_table_id = aws_route_table.launchTempRouteTable.id
+}
+
+#Add Route to route table pointing to the gateway
+resource "aws_route" "addingRoute" {
+    route_table_id = aws_route_table.launchTempRouteTable.id
+    destination_cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.launchTemplateGateway.id
+}
+
+#SSH
 resource "aws_security_group" "sshSecurity" {
   name = "sshSecurity"
   description = "Allow SSH"
@@ -39,16 +66,6 @@ resource "aws_security_group" "sshSecurity" {
   tags = {
       Name = "sshSecurity"
   }
-}
-
-resource "aws_vpc_endpoint" "ec2" {
-  vpc_id = aws_vpc.ltVPC.id
-  
-}
-
-resource "aws_vpc_endpoint_subnet_association" "endpointSubnet" {
-  vpc_endpoint_id = aws_vpc.ltVPC.id
-  subnet_id = aws_subnet.ltSub.id
 }
 
 resource "aws_launch_template" "test" {
