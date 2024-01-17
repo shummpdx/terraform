@@ -1,5 +1,7 @@
-To Do:
+Creates two instances based off a launch template and utilizes autoscaling groups.
 
-Include key creation.
-Error creating Auto Scaling Group. The <b>SUBNET</b> does not exist.
-- autoScalingGroup.tf
+Tested and verified:
+Always have two instances running -> Removal of one instances results in another being created
+
+Things to test:
+Stress test

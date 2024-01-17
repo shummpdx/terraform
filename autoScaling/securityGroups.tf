@@ -2,7 +2,7 @@
 resource "aws_security_group" "sshSecurity" {
   name = "sshSecurity"
   description = "Allow SSH"
-  vpc_id = aws_vpc.main.id
+  vpc_id = aws_vpc.autoscaling_vpc.id
 
   ingress {
     description = "SSH"
@@ -21,7 +21,7 @@ resource "aws_security_group" "sshSecurity" {
 resource "aws_security_group" "outboundTraffic" {
   name = "outboundTraffic"
   description = "Allow for outbound traffic"
-  vpc_id = aws_vpc.main.id
+  vpc_id = aws_vpc.autoscaling_vpc.id
 
   egress {
     description = "outbound traffic"
